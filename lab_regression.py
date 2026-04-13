@@ -27,8 +27,9 @@ def load_data(filepath="data/telecom_churn.csv"):
         DataFrame with all columns.
     """
     #Load the CSV and return the DataFrame
-    file_path = os.path.join('starter','data', 'telecom_churn.csv')
-    df = pd.read_csv(file_path)
+    path = filepath if os.path.exists(filepath) else os.path.join("starter", "data", "telecom_churn.csv")
+    df = pd.read_csv(path)
+
     df = df.copy()
     print(df.shape)
     print(df.isnull().sum())
@@ -50,14 +51,30 @@ def split_data(df, target_col, test_size=0.2, random_state=42):
     """
     #Separate features and target, then split with stratification
 
-    X = df.drop(columns=[target_col, 'customer_id'])
+    drop_cols = [target_col]
+    if 'customer_id' in df.columns:
+        drop_cols.append('customer_id')
+        
+    X = df.drop(columns=drop_cols)
     y = df[target_col]
-    X_encoded = pd.get_dummies(X, columns=['contract_type', 'internet_service', 'payment_method'], drop_first=True)
-    X_encoded['gender'] = X_encoded['gender'].map({'Male': 1, 'Female': 0})
+
+    cat_cols = ['contract_type', 'internet_service', 'payment_method']
+    present_cat_cols = [c for c in cat_cols if c in X.columns]
+    if present_cat_cols:
+        X_encoded = pd.get_dummies(X, columns=present_cat_cols, drop_first=True)
+    else:
+        X_encoded = X.copy()
+
+    if 'gender' in X_encoded.columns:
+        X_encoded['gender'] = X_encoded['gender'].map({'Male': 1, 'Female': 0}) 
+
     col_to_int = ['contract_type_One year', 'contract_type_Two year',
               'internet_service_Fiber optic', 'internet_service_No', 'payment_method_Credit card',
               'payment_method_Electronic check', 'payment_method_Mailed check']
-    X_encoded[col_to_int] = X_encoded[col_to_int].astype(int)
+
+    present_int_cols = [c for c in col_to_int if c in X_encoded.columns]
+    X_encoded[present_int_cols] = X_encoded[present_int_cols].astype(int)
+    
     strat = y if target_col == 'churned' else None
     return train_test_split(X_encoded, y, test_size=0.2, random_state=42, stratify=strat)
 
