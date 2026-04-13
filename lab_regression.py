@@ -27,7 +27,7 @@ def load_data(filepath="data/telecom_churn.csv"):
         DataFrame with all columns.
     """
     #Load the CSV and return the DataFrame
-    file_path = os.path.join('data', 'telecom_churn.csv')
+    file_path = os.path.join('starter','data', 'telecom_churn.csv')
     df = pd.read_csv(file_path)
     df = df.copy()
     print(df.shape)
@@ -88,6 +88,19 @@ def build_ridge_pipeline():
     ])
 
 
+def build_lasso_pipeline():
+    """Build a Pipeline with StandardScaler and Lasso regression.
+
+    Returns:
+        sklearn Pipeline object.
+    """
+    #Create and return a Pipeline for Lasso regression
+    return Pipeline([
+        ("scaler", StandardScaler()),
+        ("regressor", Lasso(max_iter=1000, random_state=42, alpha=1.0))
+    ])
+
+
 def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
     """Train the pipeline and return classification metrics.
 
@@ -103,7 +116,7 @@ def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
     return {
-        "accuracy": (y_pred == y_test).mean(),
+        "accuracy": accuracy_score(y_test, y_pred),
         "precision": precision_score(y_test, y_pred),
         "recall": recall_score(y_test, y_pred),
         "f1": f1_score(y_test, y_pred)
