@@ -27,7 +27,14 @@ def load_data(filepath="data/telecom_churn.csv"):
         DataFrame with all columns.
     """
     #Load the CSV and return the DataFrame
-    path = filepath if os.path.exists(filepath) else os.path.join("starter", "data", "telecom_churn.csv")
+    if os.path.exists(filepath):
+        path = filepath
+    else:
+        path = os.path.join("starter", "data", "telecom_churn.csv")
+    
+    if not os.path.exists(path):
+         path = "telecom_churn.csv" 
+         
     df = pd.read_csv(path)
 
     df = df.copy()
@@ -35,6 +42,10 @@ def load_data(filepath="data/telecom_churn.csv"):
     print(df.isnull().sum())
     print(df['churned'].value_counts(normalize=True))
     return df
+
+            
+            
+    raise FileNotFoundError(f"Could not find the dataset. Checked paths: {paths_to_check}")
 
 
 def split_data(df, target_col, test_size=0.2, random_state=42):
@@ -74,7 +85,7 @@ def split_data(df, target_col, test_size=0.2, random_state=42):
 
     present_int_cols = [c for c in col_to_int if c in X_encoded.columns]
     X_encoded[present_int_cols] = X_encoded[present_int_cols].astype(int)
-    
+
     strat = y if target_col == 'churned' else None
     return train_test_split(X_encoded, y, test_size=0.2, random_state=42, stratify=strat)
 
