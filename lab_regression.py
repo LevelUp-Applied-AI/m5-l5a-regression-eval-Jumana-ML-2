@@ -9,11 +9,13 @@ Run: python lab_regression.py
 
 import pandas as pd
 import numpy as np
+import os
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.linear_model import LogisticRegression, Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import (classification_report, confusion_matrix,
+from sklearn.metrics import (classification_report, confusion_matrix, accuracy_score,
+                             precision_score, recall_score, f1_score,
                              mean_absolute_error, r2_score)
 
 
@@ -23,8 +25,14 @@ def load_data(filepath="data/telecom_churn.csv"):
     Returns:
         DataFrame with all columns.
     """
-    # TODO: Load the CSV and return the DataFrame
-    pass
+    #Load the CSV and return the DataFrame
+    file_path = os.path.join('data', 'telecom_churn.csv')
+    df = pd.read_csv(file_path)
+    df = df.copy()
+    print(df.shape)
+    print(df.isnull().sum())
+    print(df['churned'].value_counts(normalize=True))
+    return df
 
 
 def split_data(df, target_col, test_size=0.2, random_state=42):
@@ -39,8 +47,18 @@ def split_data(df, target_col, test_size=0.2, random_state=42):
     Returns:
         Tuple of (X_train, X_test, y_train, y_test).
     """
-    # TODO: Separate features and target, then split with stratification
-    pass
+    #Separate features and target, then split with stratification
+
+    X = df.drop(columns=[target_col, 'customer_id'])
+    y = df[target_col]
+    X_encoded = pd.get_dummies(X, columns=['contract_type', 'internet_service', 'payment_method'], drop_first=True)
+    X_encoded['gender'] = X_encoded['gender'].map({'Male': 1, 'Female': 0})
+    col_to_int = ['contract_type_One year', 'contract_type_Two year',
+              'internet_service_Fiber optic', 'internet_service_No', 'payment_method_Credit card',
+              'payment_method_Electronic check', 'payment_method_Mailed check']
+    X_encoded[col_to_int] = X_encoded[col_to_int].astype(int)
+    strat = y if target_col == 'churned' else None
+    return train_test_split(X_encoded, y, test_size=0.2, random_state=42, stratify=strat)
 
 
 def build_logistic_pipeline():
@@ -49,8 +67,11 @@ def build_logistic_pipeline():
     Returns:
         sklearn Pipeline object.
     """
-    # TODO: Create and return a Pipeline with two steps
-    pass
+    #Create and return a Pipeline with two steps
+    return Pipeline([
+        ("scaler", StandardScaler()),
+        ("classifier", LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced'))
+    ])
 
 
 def build_ridge_pipeline():
@@ -59,8 +80,11 @@ def build_ridge_pipeline():
     Returns:
         sklearn Pipeline object.
     """
-    # TODO: Create and return a Pipeline for Ridge regression
-    pass
+    #Create and return a Pipeline for Ridge regression
+    return Pipeline([
+        ("scaler", StandardScaler()),
+        ("regressor", Ridge(max_iter=1000, random_state=42, alpha=1.0))
+    ])
 
 
 def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
@@ -74,8 +98,15 @@ def evaluate_classifier(pipeline, X_train, X_test, y_train, y_test):
     Returns:
         Dictionary with keys: 'accuracy', 'precision', 'recall', 'f1'.
     """
-    # TODO: Fit the pipeline on training data, predict on test, compute metrics
-    pass
+    #Fit the pipeline on training data, predict on test, compute metrics
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
+    return {
+        "accuracy": (y_pred == y_test).mean(),
+        "precision": precision_score(y_test, y_pred),
+        "recall": recall_score(y_test, y_pred),
+        "f1": f1_score(y_test, y_pred)
+    }
 
 
 def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
@@ -89,8 +120,13 @@ def evaluate_regressor(pipeline, X_train, X_test, y_train, y_test):
     Returns:
         Dictionary with keys: 'mae', 'r2'.
     """
-    # TODO: Fit the pipeline, predict, and compute MAE and R²
-    pass
+    #Fit the pipeline, predict, and compute MAE and R²
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
+    return {
+        "mae": mean_absolute_error(y_test, y_pred),
+        "r2": r2_score(y_test, y_pred)
+    }
 
 
 def run_cross_validation(pipeline, X_train, y_train, cv=5):
@@ -105,8 +141,9 @@ def run_cross_validation(pipeline, X_train, y_train, cv=5):
     Returns:
         Array of cross-validation scores.
     """
-    # TODO: Run cross_val_score with StratifiedKFold
-    pass
+    #Run cross_val_score with StratifiedKFold
+    return cross_val_score(pipeline, X_train, y_train, cv=cv, scoring="accuracy")
+    
 
 
 if __name__ == "__main__":
